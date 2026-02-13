@@ -5,10 +5,8 @@ using UnityEngine;
 public class TestNetwork : NetworkIdentity
 {
     [SerializeField] private TMP_Text _healthText;
-    [SerializeField] private Color _color;
-    [SerializeField] private Renderer _renderer;
 
-    [SerializeField] private SyncVar<int> _health = new(initialValue: 100);
+    [SerializeField] private SyncVar<int> _health = new(initialValue: 100, ownerAuth:true);
 
     private void Awake()
     {
@@ -21,6 +19,13 @@ public class TestNetwork : NetworkIdentity
         _health.onChanged -= OnChanged;
     }
 
+    protected override void OnSpawned()
+    {
+        base.OnSpawned();
+
+        enabled = isOwner;
+    }
+
     private void OnChanged(int newValue)
     {
         _healthText.text = newValue.ToString();
@@ -28,24 +33,11 @@ public class TestNetwork : NetworkIdentity
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            var myStruct = new TestStruct()
-            {
-                color = _color
-            };
-            SetColor(myStruct);
-        }
-        if (Input.GetKeyDown(KeyCode.S))
+        
+        if (Input.GetKeyDown(KeyCode.X))
         {
             TakeDamage(10);
         }
-    }
-
-    [ObserversRpc(bufferLast:true)]
-    private void SetColor(TestStruct myStruct)
-    {
-        _renderer.material.color = myStruct.color;
     }
 
     [ServerRpc]
@@ -56,12 +48,8 @@ public class TestNetwork : NetworkIdentity
         if(_health.value <= 0)
         {
             _health.value = 0;
-            Debug.Log($"has died!");
+            Destroy(gameObject);
         }
     }
 
-    private struct TestStruct
-    {
-        public Color color;
-    }
 }
